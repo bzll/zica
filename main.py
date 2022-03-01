@@ -11,13 +11,13 @@ class Friend:
     bored = 0
     food = 100
     exhausted = 0
-    alive = True
+    alive = 1
 
     def __init__(self):
 
         database = r"db/sqlite.db"
-        conn = create_connection(database)
-        friends = select_friends(conn)
+        self.conn = create_connection(database)
+        friends = select_friends(self.conn)
         new = True
 
         if friends:
@@ -38,14 +38,15 @@ class Friend:
             ]
             answer = inquirer.prompt(question)
             self.name = answer.get("name")
-            self.id = create_friends(conn,(self.name, self.age, self.bored, self.food, self.exhausted, self.alive))
+            self.id = create_friends(self.conn,(self.name, self.age, self.bored, self.food, self.exhausted, self.alive))
         
-        friend_selected = select_friend(conn, self.id)
+        friend_selected = select_friend(self.conn, self.id)
         self.name = friend_selected[0]
         self.age = friend_selected[1]
         self.bored = friend_selected[2]
-        self.exhausted = friend_selected[3]
-        self.alive = friend_selected[4]
+        self.food = friend_selected[3]
+        self.exhausted = friend_selected[4]
+        self.alive = friend_selected[5]
 
     def activity_eat(self):
         self.food = self.food + 2.5
@@ -79,7 +80,7 @@ class Friend:
         self.exhausted = self.exhausted + 0.5
 
         if self.food < -20 or self.exhausted >= 100:
-            self.alive = False
+            self.alive = 0
 
     def status(self):
         print(
@@ -96,6 +97,7 @@ Cansaço: {self.exhausted}
     def run(self):
         self.clear()
         self.status()
+        update_friends(self.conn,(self.age, self.bored, self.food, self.exhausted, self.alive, self.id))
         question = [
             inquirer.List(
                 "activity",
@@ -131,17 +133,18 @@ def main():
 
     def run(sc):
         tamago.pass_time()
-        if tamago.alive:
+        if tamago.alive == 1:
             s.enter(10, 1, run, (sc,))
 
     s.enter(10, 1, run, (s,))
     t = threading.Thread(target=s.run)
     t.start()
 
-    while tamago.alive:
+    while tamago.alive == 1:
         tamago.run()
 
     print(f"{tamago.name} morreu :(")
+
 
 
 def create_connection(db_file):
@@ -244,5 +247,8 @@ def manage_db():
 
 
 if __name__ == "__main__":
-    manage_db()
-    main()
+    try:
+        manage_db()
+        main()
+    except KeyboardInterrupt:
+        print(f"Adeus!")
